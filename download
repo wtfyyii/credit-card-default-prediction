@@ -1,0 +1,97 @@
+from pathlib import Path
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+from sklearn.model_selection import train_test_split
+
+RANDOM_STATE = 42
+TEST_SIZE = 0.2
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_PATH = PROJECT_ROOT / 'data' / 'raw' / 'default_of_credit_card_clients.xls'
+
+
+def load_data(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        raise FileNotFoundError(f'Dataset not found: {path}')
+    return pd.read_excel(path)
+
+
+def preprocess_data(df: pd.DataFrame):
+    if 'Unnamed: 0' in df.columns:
+        df = df.drop(columns=['Unnamed: 0'])
+
+    id_cols = [c for c in df.columns if c.lower() == 'id']
+    if id_cols:
+        df = df.drop(columns=id_cols)
+
+    label_col = 'Y'
+    if label_col not in df.columns:
+        raise KeyError("Label column 'Y' not found in dataset.")
+
+    df[label_col] = pd.to_numeric(df[label_col], errors='coerce')
+    before = len(df)
+    df = df.dropna(subset=[label_col]).copy()
+    dropped = before - len(df)
+    if dropped:
+        print(f'Dropped {dropped} non-numeric label rows.')
+
+    df[label_col] = df[label_col].astype(int)
+
+    y = df[label_col]
+    X = df.drop(columns=[label_col])
+
+    non_numeric_cols = X.select_dtypes(exclude=['number']).columns.tolist()
+    if non_numeric_cols:
+        X = pd.get_dummies(X, columns=non_numeric_cols, drop_first=True)
+
+    if X.isna().any().any():
+        X = X.fillna(X.median(numeric_only=True))
+
+    return X, y
+
+
+def train_and_evaluate(X: pd.DataFrame, y: pd.Series):
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=TEST_SIZE,
+        random_state=RANDOM_STATE,
+        stratify=y,
+    )
+
+    model = RandomForestClassifier(
+        n_estimators=300,
+        max_depth=12,
+        min_samples_leaf=10,
+        random_state=RANDOM_STATE,
+        n_jobs=-1,
+        class_weight='balanced',
+    )
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+
+    print('\n=== Metrics (Test Set) ===')
+    print(f'Accuracy : {accuracy_score(y_test, y_pred):.4f}')
+    print(f'Precision: {precision_score(y_test, y_pred, zero_division=0):.4f}')
+    print(f'Recall   : {recall_score(y_test, y_pred, zero_division=0):.4f}')
+    print(f'F1-score : {f1_score(y_test, y_pred, zero_division=0):.4f}')
+
+    print('\n=== Confusion Matrix ===')
+    print(confusion_matrix(y_test, y_pred))
+
+    print('\n=== Classification Report ===')
+    print(classification_report(y_test, y_pred, digits=4))
+
+    importances = pd.Series(model.feature_importances_, index=X.columns).sort_values(ascending=False)
+    print('\n=== Top 15 Feature Importances ===')
+    print(importances.head(15))
+
+
+if __name__ == '__main__':
+    df = load_data(DATA_PATH)
+    print('Loaded data shape:', df.shape)
+    print('Columns:', list(df.columns))
+    X, y = preprocess_data(df)
+    print('Final X shape:', X.shape, 'y mean(default rate):', y.mean())
+    train_and_evaluate(X, y)

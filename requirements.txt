@@ -1,0 +1,109 @@
+# Credit Card Default Prediction with Random Forest
+
+This project uses a **Random Forest classifier** to predict whether a credit card customer is likely to default in the next payment period.
+
+## Project Overview
+
+The project is based on the **Default of Credit Card Clients (Taiwan)** dataset from the UCI Machine Learning Repository. It applies machine learning to a credit risk problem by using historical repayment behavior and customer-related variables to classify future default risk.
+
+## Dataset
+
+- Source: UCI Machine Learning Repository
+- Dataset: Default of Credit Card Clients (Taiwan)
+- Approximate sample size: 30,000 records
+- Target label:
+  - `Y = 1`: default next month
+  - `Y = 0`: no default next month
+
+The raw dataset file is stored at:
+
+```bash
+data/raw/default_of_credit_card_clients.xls
+```
+
+## Method
+
+The model in this project is a `RandomForestClassifier` with:
+
+- `n_estimators=300`
+- `max_depth=12`
+- `min_samples_leaf=10`
+- `class_weight='balanced'`
+- train/test split = `80% / 20%`
+- stratified sampling for label balance
+
+### Preprocessing
+
+The script performs the following preprocessing steps:
+
+1. Removes unnecessary columns such as `Unnamed: 0` and `ID`.
+2. Converts the target column `Y` to numeric values.
+3. Drops invalid rows if the label cannot be converted to numeric.
+4. Applies one-hot encoding to non-numeric feature columns if needed.
+5. Fills missing values with the median.
+
+## Results
+
+According to the attached report, the model achieved approximately:
+
+- Accuracy: `0.7580`
+- Precision: `0.4610`
+- Recall: `0.5561`
+- F1-score: `0.5041`
+
+The report also highlights that recent repayment status (`X6 ~ X11`), credit limit (`X1`), and selected payment/bill-related features are among the most important predictors.
+
+## Project Structure
+
+```bash
+credit-card-default-prediction/
+├── README.md
+├── requirements.txt
+├── .gitignore
+├── data/
+│   └── raw/
+│       └── default_of_credit_card_clients.xls
+├── docs/
+│   └── report.docx
+└── src/
+    └── train_random_forest.py
+```
+
+## How to Run
+
+### 1. Clone the repository
+
+```bash
+git clone <your-repository-url>
+cd credit-card-default-prediction
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Run the training script
+
+```bash
+python src/train_random_forest.py
+```
+
+## Notes for GitHub Upload
+
+- Keep file names simple and consistent in English.
+- Include the report file for academic presentation.
+- If you later add charts, save them under a new `outputs/` folder.
+- You can also add a short screenshot of your terminal results to make the repository look more complete.
+
+## Future Improvements
+
+- Compare Random Forest with Logistic Regression and XGBoost.
+- Tune classification threshold for better recall/precision tradeoff.
+- Add visualizations for confusion matrix and feature importance.
+- Add notebook version for easier presentation.
+
+## Author
+
+You can replace this section with your name, school, and internship application information.
